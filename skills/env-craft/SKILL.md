@@ -161,15 +161,19 @@ Collect all `skills_sh` entries from:
 - The base's `env-craft-module.json`
 - Each active module's `env-craft-module.json`
 
-Build a single install command:
+Build a single install command with these flags:
+- `-a claude-code` — install only for Claude Code (not other agents like cursor/windsurf)
+- No `-g` flag — project scope (default), not global
+- Symlink is the default install method (do NOT use `--copy`)
+- `-y` — skip confirmation prompts
 
 ```bash
-npx skills add <package1> <package2> ... -y
+npx skills add <package1> <package2> ... -a claude-code -y
 ```
 
 For example, for a Nuxt project with +ui-nuxt-ui and +content-nuxt:
 ```bash
-npx skills add antfu/skills@nuxt antfu/skills@vue wshobson/agents@typescript-advanced-types nuxt/ui@nuxt-ui onmax/nuxt-skills@nuxt-content -y
+npx skills add antfu/skills@nuxt antfu/skills@vue wshobson/agents@typescript-advanced-types nuxt/ui@nuxt-ui onmax/nuxt-skills@nuxt-content -a claude-code -y
 ```
 
 **Before installing**, check which skills are already in `.claude/skills/` to avoid reinstalling. Show the user what will be installed and ask for confirmation.
