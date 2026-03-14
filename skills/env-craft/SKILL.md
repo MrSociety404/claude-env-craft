@@ -153,8 +153,9 @@ All real files go into `.agents/`, with symlinks in `.claude/` pointing to them.
 ├── skills/         # Real skill files (installed by skills.sh)
 └── commands/       # Real command files
 .claude/
-├── rules/          # Symlinks → ../.agents/rules/*
-└── skills/         # Symlinks → ../.agents/skills/*
+├── rules/          # Symlink → ../.agents/rules/
+├── skills/         # Symlinks → ../.agents/skills/*
+└── commands/       # Symlink → ../.agents/commands/
 ```
 
 **Install skills** into `.agents/skills/`, symlink from `.claude/skills/`:
@@ -197,6 +198,23 @@ ln -sfn ../.agents/rules .claude/rules
 ```
 
 Use absolute paths for the plugin tier symlink targets so they work regardless of the current directory.
+
+**Install commands** from the plugin into `.agents/commands/`, symlink from `.claude/commands/`:
+
+```bash
+mkdir -p .agents/commands
+
+# Copy command files from the plugin
+for f in ${ENV_CRAFT_ROOT}/commands/*.md; do
+  cp "$f" .agents/commands/"$(basename "$f")"
+done
+
+# Symlink .claude/commands/ → .agents/commands/ (directory symlink)
+rm -rf .claude/commands
+ln -sfn ../.agents/commands .claude/commands
+```
+
+This gives the user `/commit`, `/create-branch`, `/create-pr`, `/create-branch-pr`, and `/review-pr` commands.
 
 #### Step 5: Generate CLAUDE.md
 
