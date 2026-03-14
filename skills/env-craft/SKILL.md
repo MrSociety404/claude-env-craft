@@ -128,13 +128,7 @@ Flags:
 **Copy tier rules** (one Bash call):
 ```bash
 mkdir -p .claude/rules
-rm -f .claude/rules/env-craft-*.md
 cp ${ENV_CRAFT_ROOT}/tiers/<tier>/rules/*.md .claude/rules/ 2>/dev/null || true
-```
-
-Prefix copied rule files with `env-craft-` to distinguish them from user-created rules:
-```bash
-cd .claude/rules && for f in *.md; do [ -f "$f" ] && mv "$f" "env-craft-$f"; done
 ```
 
 #### Step 5: Generate CLAUDE.md
@@ -179,7 +173,7 @@ Managed by env-craft. Run `/env-craft` commands to manage.
 
 ### Quality Rules
 Tier: @[size] — [description]
-Rules in `.claude/rules/env-craft-*.md`
+Rules in `.claude/rules/`
 ```
 
 #### Final: Write manifest
@@ -262,7 +256,7 @@ Search and install additional skills:
 
 1. Skills and rules remain in `.claude/`
 2. Remove `.claude/env-craft.json`
-3. Rename `env-craft-*.md` rules to remove prefix
+3. Rules in `.claude/rules/` are yours to keep or delete
 4. Warn: "Environment ejected. Files are now standalone — env-craft commands will no longer work."
 
 ## Size Estimation
