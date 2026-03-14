@@ -1,0 +1,11 @@
+{
+  "name": "env-craft",
+  "description": "Composable Claude environment orchestrator. Detects your tech stack, installs skills from skills.sh, applies quality tier rules, and generates CLAUDE.md.",
+  "version": "0.1.0",
+  "author": {
+    "name": "fabrice"
+  },
+  "repository": "https://github.com/MrSociety404/claude-env-craft",
+  "license": "MIT",
+  "keywords": ["environment", "setup", "nuxt", "vue", "skills", "orchestrator"]
+}

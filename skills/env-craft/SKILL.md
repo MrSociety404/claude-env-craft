@@ -21,15 +21,13 @@ You are the env-craft environment manager. You orchestrate the installation and 
 
 ## Path Resolution
 
-**CRITICAL:** All template paths are relative to the env-craft source root, NOT the target project.
+**CRITICAL:** All template paths are relative to the plugin root, NOT the target project.
 
-Resolve the source root from the skill location:
 ```
-ENV_CRAFT_ROOT = ${CLAUDE_SKILL_DIR}/../..
+ENV_CRAFT_ROOT = ${CLAUDE_PLUGIN_ROOT}
 ```
 
-`${CLAUDE_SKILL_DIR}` points to this skill's directory (e.g. `src/skills/env-craft/`).
-Going up two levels gives us `src/` — the root of all env-craft templates.
+`${CLAUDE_PLUGIN_ROOT}` points to the env-craft plugin's root directory — where all templates live.
 
 **Use `ENV_CRAFT_ROOT` for reading templates** (tiers, sizes, modules, presets).
 **Use the target project's working directory** for writing assembled output.

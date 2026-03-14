@@ -1,10 +1,10 @@
-# claude-env-craft
+# env-craft
 
-Composable Claude environment orchestrator. Detects your tech stack, installs the right skills from [skills.sh](https://skills.sh), applies quality tier rules, and generates a `CLAUDE.md` — all in one command.
+Claude Code plugin that orchestrates your AI development environment. Detects your tech stack, installs the right skills from [skills.sh](https://skills.sh), applies quality tier rules, and generates a `CLAUDE.md` — all in one command.
 
 ## What is this?
 
-env-craft orchestrates your Claude AI environment by combining:
+env-craft is a **Claude Code plugin** that orchestrates your AI environment by combining:
 - **Quality tier rules** (DRY, SOLID, clean-code, architecture patterns) — env-craft's own content, scaled by project size
 - **Tech-specific skills** from [skills.sh](https://skills.sh) — maintained by the community and official teams (antfu, nuxt, onmax, etc.)
 - **CLAUDE.md generation** — project-aware configuration with tech stack, dev commands, and structure
@@ -13,13 +13,34 @@ No more copy-pasting CLAUDE.md files or manually installing skills for each proj
 
 ## Install
 
+### From the plugin marketplace (recommended)
+
 ```bash
-# In your target project
-mkdir -p .claude/skills
-ln -sfn /path/to/claude-env-craft/src/skills/env-craft .claude/skills/env-craft
+# Install globally (available in all projects)
+claude plugin install env-craft --scope user
+
+# Or install for a specific project only
+claude plugin install env-craft --scope project
 ```
 
-Then run `/env-craft init` in Claude Code.
+### From GitHub
+
+```bash
+# Clone the repo
+git clone https://github.com/MrSociety404/claude-env-craft.git
+
+# Install from local directory
+claude --plugin-dir ./claude-env-craft
+```
+
+### Local development / testing
+
+```bash
+# Test the plugin without installing
+claude --plugin-dir /path/to/claude-env-craft
+```
+
+After installation, run `/env-craft init` in Claude Code to set up your project.
 
 ## Quick Start
 
@@ -108,47 +129,46 @@ Curated shortcuts combining base + size + modules:
 | `/env-craft import <url>` | Import an external module from GitHub |
 | `/env-craft eject` | Stop using env-craft, keep generated files |
 
-## Architecture
+## Plugin Structure
 
 ```
-src/
-├── bases/                      # Base definitions (skills.sh mappings per stack)
+env-craft/                          # Plugin root (${CLAUDE_PLUGIN_ROOT})
+├── .claude-plugin/
+│   └── plugin.json                 # Plugin manifest
+├── skills/
+│   └── env-craft/
+│       └── SKILL.md                # The orchestrator skill
+├── bases/                          # Base definitions (skills.sh mappings per stack)
 │   └── frontend-nuxt/
 │       └── env-craft-module.json
-├── tiers/                      # Quality tier rules (env-craft's own content)
-│   ├── core/rules/             # Always applied (DRY, naming, clean-code, consistency)
-│   ├── structure/rules/        # @medium + @large (folder-architecture, typing, SoC)
-│   └── patterns/rules/         # @large only (SOLID, DI, layered-architecture)
-├── sizes/                      # Size → tier mappings
+├── tiers/                          # Quality tier rules (env-craft's own content)
+│   ├── core/rules/                 # Always applied (DRY, naming, clean-code, consistency)
+│   ├── structure/rules/            # @medium + @large (folder-architecture, typing, SoC)
+│   └── patterns/rules/             # @large only (SOLID, DI, layered-architecture)
+├── sizes/                          # Size → tier mappings
 │   ├── small.json
 │   ├── medium.json
 │   └── large.json
-├── modules/                    # Module definitions (skills.sh mappings per dependency)
+├── modules/                        # Module definitions (skills.sh mappings per dependency)
 │   ├── i18n/
 │   ├── pinia/
 │   ├── ui-nuxt-ui/
 │   ├── content-nuxt/
 │   └── vueuse/
-├── presets/                    # Curated combinations
+├── presets/                        # Curated combinations
 │   ├── small-nuxt.json
 │   ├── medium-nuxt.json
 │   └── large-nuxt-i18n.json
-├── external/                   # Imported GitHub modules
-├── skills/
-│   └── env-craft/SKILL.md      # The orchestrator skill
-└── env-craft.schema.json       # Manifest schema
+├── external/                       # Imported GitHub modules
+├── env-craft.schema.json           # Manifest schema
+└── README.md
 ```
 
 ## Contributing
 
 ### Add a new module
 
-Create a folder in `src/modules/<name>/` with:
-
-```
-my-module/
-└── env-craft-module.json
-```
+Create a folder in `modules/<name>/` with an `env-craft-module.json`:
 
 ```json
 {
@@ -164,7 +184,7 @@ The `skills_sh` array contains full skills.sh package identifiers that will be i
 
 ### Add a new base
 
-Create a folder in `src/bases/<name>/` with:
+Create a folder in `bases/<name>/` with an `env-craft-module.json`:
 
 ```json
 {
@@ -178,7 +198,7 @@ Create a folder in `src/bases/<name>/` with:
 
 ### Add a new preset
 
-Create a JSON file in `src/presets/<name>.json`:
+Create a JSON file in `presets/<name>.json`:
 
 ```json
 {
@@ -194,5 +214,5 @@ Create a JSON file in `src/presets/<name>.json`:
 
 - [ ] More bases: `backend-node`, `fullstack-nuxt`, `backend-python`
 - [ ] More modules: `+testing-vitest`, `+drizzle`, `+motion`, `+nuxt-seo`
-- [ ] Plugin packaging for distribution
+- [ ] Publish to official Claude plugin marketplace
 - [ ] Auto-update skills with `npx skills check`
