@@ -1,7 +1,9 @@
 {
   "name": "content-nuxt",
   "type": "module",
-  "description": "Nuxt Content v3 patterns — collections, MDC, content queries, and schema definitions",
+  "description": "Nuxt Content v3 — installs Nuxt Content skill from skills.sh",
   "compat": ["frontend-nuxt", "fullstack-nuxt"],
-  "skills_sh": ["nuxt-content"]
+  "skills_sh": [
+    "onmax/nuxt-skills@nuxt-content"
+  ]
 }

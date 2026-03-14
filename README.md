@@ -1,10 +1,15 @@
 # claude-env-craft
 
-Composable Claude environment manager. Generates and maintains `.claude/` configuration tailored to your project type and scale.
+Composable Claude environment orchestrator. Detects your tech stack, installs the right skills from [skills.sh](https://skills.sh), applies quality tier rules, and generates a `CLAUDE.md` — all in one command.
 
 ## What is this?
 
-claude-env-craft creates the right Claude Code environment for your project — rules, skills, agents, settings — based on your tech stack and project size. No more copy-pasting CLAUDE.md files between projects.
+env-craft orchestrates your Claude AI environment by combining:
+- **Quality tier rules** (DRY, SOLID, clean-code, architecture patterns) — env-craft's own content, scaled by project size
+- **Tech-specific skills** from [skills.sh](https://skills.sh) — maintained by the community and official teams (antfu, nuxt, onmax, etc.)
+- **CLAUDE.md generation** — project-aware configuration with tech stack, dev commands, and structure
+
+No more copy-pasting CLAUDE.md files or manually installing skills for each project.
 
 ## Install
 
@@ -27,18 +32,28 @@ Then run `/env-craft init` in Claude Code.
 /env-craft init large-nuxt-i18n
 ```
 
+## What You Get
+
+When you run `/env-craft init`, env-craft:
+
+1. **Detects** your framework, dependencies, and project size
+2. **Installs quality rules** in `.claude/rules/` based on your project size (tier system)
+3. **Installs tech skills** from skills.sh for your stack (nuxt, vue, pinia, etc.)
+4. **Generates CLAUDE.md** with your tech stack, dev commands, and project structure
+5. **Creates a manifest** (`.claude/env-craft.json`) to track your configuration
+
 ## Core Concepts
 
 ### Bases
 
-Foundation templates tied to a tech stack:
-- `frontend-nuxt` — Nuxt 4+ frontend applications
+Foundation tied to a tech stack — determines which skills.sh packages to install:
+- `frontend-nuxt` — Nuxt 4+ (installs `antfu/skills@nuxt`, `antfu/skills@vue`, `wshobson/agents@typescript-advanced-types`)
 
 *Coming soon: `backend-node`, `fullstack-nuxt`, `backend-python`*
 
-### Size Modifiers
+### Size Modifiers (Quality Tiers)
 
-Control rule strictness via a three-tier system:
+Control rule strictness via a three-tier system. These are env-craft's own rules — quality patterns that scale with your project:
 
 | Size | Tiers | What you get |
 |------|-------|-------------|
@@ -50,12 +65,23 @@ Control rule strictness via a three-tier system:
 
 ### Modules
 
-Add-on blocks that stack onto a base:
-- `+i18n` — Internationalization conventions
-- `+pinia` — Pinia store patterns
-- `+ui-nuxt-ui` — Nuxt UI v4 conventions
-- `+content-nuxt` — Nuxt Content v3 patterns
-- `+vueuse` — VueUse composable conventions
+Add-on blocks that map to skills.sh packages:
+
+| Module | Skills.sh package installed |
+|--------|-----------------------------|
+| `+i18n` | *(detected, no specific skill yet)* |
+| `+pinia` | `antfu/skills@pinia` |
+| `+ui-nuxt-ui` | `nuxt/ui@nuxt-ui` |
+| `+content-nuxt` | `onmax/nuxt-skills@nuxt-content` |
+| `+vueuse` | `antfu/skills@vueuse-functions` |
+
+### Extra Skills Detection
+
+env-craft also detects dependencies that don't have a module but have a skills.sh skill:
+- `drizzle-orm` → `bobmatnyc/claude-mpm-skills@drizzle-orm`
+- `tailwindcss` → `wshobson/agents@tailwind-design-system`
+- `motion-v` → `onmax/nuxt-skills@motion`
+- `@nuxt/seo` → `onmax/nuxt-skills@nuxt-seo`
 
 ### Presets
 
@@ -77,28 +103,27 @@ Curated shortcuts combining base + size + modules:
 | `/env-craft remove +module` | Remove a module and reassemble |
 | `/env-craft size @large` | Change size modifier and reassemble |
 | `/env-craft check` | Drift detection — compare project state vs env config |
-| `/env-craft list` | Show current env: base, size, modules |
+| `/env-craft list` | Show current env: base, size, modules, skills |
 | `/env-craft templates` | Browse available bases, modules, presets |
 | `/env-craft import <url>` | Import an external module from GitHub |
 | `/env-craft eject` | Stop using env-craft, keep generated files |
 
-## Project Structure
+## Architecture
 
 ```
 src/
-├── bases/                      # Base templates (one per tech stack)
+├── bases/                      # Base definitions (skills.sh mappings per stack)
 │   └── frontend-nuxt/
-│       ├── env-craft-module.json
-│       └── rules/
-├── tiers/                      # Three-tier rule system
-│   ├── core/rules/             # Always applied
-│   ├── structure/rules/        # @medium + @large
-│   └── patterns/rules/         # @large only
+│       └── env-craft-module.json
+├── tiers/                      # Quality tier rules (env-craft's own content)
+│   ├── core/rules/             # Always applied (DRY, naming, clean-code, consistency)
+│   ├── structure/rules/        # @medium + @large (folder-architecture, typing, SoC)
+│   └── patterns/rules/         # @large only (SOLID, DI, layered-architecture)
 ├── sizes/                      # Size → tier mappings
 │   ├── small.json
 │   ├── medium.json
 │   └── large.json
-├── modules/                    # Add-on modules
+├── modules/                    # Module definitions (skills.sh mappings per dependency)
 │   ├── i18n/
 │   ├── pinia/
 │   ├── ui-nuxt-ui/
@@ -122,20 +147,33 @@ Create a folder in `src/modules/<name>/` with:
 
 ```
 my-module/
-├── env-craft-module.json    # { name, type: "module", compat: [...] }
-└── rules/
-    └── my-module.md         # Rules with YAML frontmatter
+└── env-craft-module.json
 ```
+
+```json
+{
+  "name": "my-module",
+  "type": "module",
+  "description": "What this module adds",
+  "compat": ["frontend-nuxt"],
+  "skills_sh": ["owner/repo@skill-name"]
+}
+```
+
+The `skills_sh` array contains full skills.sh package identifiers that will be installed when this module is active.
 
 ### Add a new base
 
 Create a folder in `src/bases/<name>/` with:
 
-```
-my-base/
-├── env-craft-module.json    # { name, type: "base" }
-└── rules/
-    └── *.md                 # Base-specific rules
+```json
+{
+  "name": "my-base",
+  "type": "base",
+  "description": "Base for X framework",
+  "compat": [],
+  "skills_sh": ["owner/repo@skill1", "owner/repo@skill2"]
+}
 ```
 
 ### Add a new preset
@@ -152,21 +190,9 @@ Create a JSON file in `src/presets/<name>.json`:
 }
 ```
 
-### Import external modules
-
-Anyone can publish a module by creating a GitHub repo with:
-
-```
-env-craft-module.json
-rules/
-  my-rules.md
-```
-
-Users install it with `/env-craft import <github-url>`.
-
 ## Roadmap
 
 - [ ] More bases: `backend-node`, `fullstack-nuxt`, `backend-python`
-- [ ] More modules: `+testing-vitest`, `+drizzle`, `+graphql`, `+saga`
-- [ ] skills.sh integration for community skill discovery
+- [ ] More modules: `+testing-vitest`, `+drizzle`, `+motion`, `+nuxt-seo`
 - [ ] Plugin packaging for distribution
+- [ ] Auto-update skills with `npx skills check`

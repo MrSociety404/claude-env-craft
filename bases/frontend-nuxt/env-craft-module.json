@@ -3,5 +3,9 @@
   "type": "base",
   "description": "Base template for Nuxt 4+ frontend applications",
   "compat": [],
-  "skills_sh": ["nuxt", "typescript-advanced-types"]
+  "skills_sh": [
+    "antfu/skills@nuxt",
+    "antfu/skills@vue",
+    "wshobson/agents@typescript-advanced-types"
+  ]
 }

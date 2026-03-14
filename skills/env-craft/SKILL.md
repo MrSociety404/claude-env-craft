@@ -14,7 +14,10 @@ allowed-tools:
 
 # env-craft — Claude Environment Manager
 
-You are the env-craft environment manager. You help users create, maintain, and evolve their Claude development environment based on project type and scale.
+You are the env-craft environment manager. You orchestrate the installation and setup of Claude AI environments by combining:
+- **Quality tier rules** (env-craft's own content: DRY, SOLID, clean-code, architecture patterns)
+- **Tech-specific skills** from skills.sh (nuxt, vue, pinia, etc. — maintained by the community/official teams)
+- **CLAUDE.md generation** (project-aware config file)
 
 ## Path Resolution
 
@@ -28,23 +31,23 @@ ENV_CRAFT_ROOT = ${CLAUDE_SKILL_DIR}/../..
 `${CLAUDE_SKILL_DIR}` points to this skill's directory (e.g. `src/skills/env-craft/`).
 Going up two levels gives us `src/` — the root of all env-craft templates.
 
-**Use `ENV_CRAFT_ROOT` for reading templates** (bases, tiers, modules, presets, sizes).
-**Use the target project's working directory** for writing assembled output and symlinks.
+**Use `ENV_CRAFT_ROOT` for reading templates** (tiers, sizes, modules, presets).
+**Use the target project's working directory** for writing assembled output.
 
 ## Directory Structure
 
 All templates live in `ENV_CRAFT_ROOT/`:
-- `ENV_CRAFT_ROOT/bases/<name>/` — Base templates (one per tech stack)
-- `ENV_CRAFT_ROOT/tiers/{core,structure,patterns}/rules/` — Tiered rules
+- `ENV_CRAFT_ROOT/bases/<name>/` — Base definitions (skills.sh mappings per tech stack)
+- `ENV_CRAFT_ROOT/tiers/{core,structure,patterns}/rules/` — Quality tier rules (env-craft's own content)
 - `ENV_CRAFT_ROOT/sizes/{small,medium,large}.json` — Size → tier mappings
-- `ENV_CRAFT_ROOT/modules/<name>/` — Add-on modules
+- `ENV_CRAFT_ROOT/modules/<name>/` — Add-on modules (skills.sh mappings per dependency)
 - `ENV_CRAFT_ROOT/presets/<name>.json` — Curated combinations
 - `ENV_CRAFT_ROOT/external/<name>/` — Imported external modules
 
 Assembled output is written to the **target project**:
-- `.claude/rules/` — Merged rules from tiers + base + modules
-- `.claude/skills/` — Merged skills from base + modules
-- `.claude/agents/` — Merged agents from base + modules
+- `.claude/rules/` — Tier rules copied from env-craft
+- `.claude/skills/` — Skills installed from skills.sh
+- `CLAUDE.md` — Generated project configuration
 
 Manifest: `.claude/env-craft.json` tracks current configuration in the target project.
 
@@ -83,7 +86,7 @@ Parse `$ARGUMENTS` to determine the command:
 
 1. Read `.claude/env-craft.json`
 2. Remove module from manifest
-3. Re-assemble (removes that module's files from output)
+3. Re-assemble
 4. Report changes
 
 ### `/env-craft size @<small|medium|large>`
@@ -100,14 +103,14 @@ Drift detection — compare project state vs env config:
 1. Read `.claude/env-craft.json`
 2. Scan `package.json` for dependencies not covered by modules
 3. Count components/files/directories to assess if size is still appropriate
-4. Check if any assembled rules reference tools/frameworks not in the project
+4. Check installed skills vs what modules recommend
 5. Report findings and suggest fixes
 6. Ask user if they want to apply suggested changes
 
 ### `/env-craft list`
 
 1. Read `.claude/env-craft.json`
-2. Display: base, size, active tiers, installed modules (with source), last assembled timestamp
+2. Display: base, size, active tiers, installed modules, installed skills, last assembled timestamp
 
 ### `/env-craft templates`
 
@@ -120,7 +123,7 @@ Drift detection — compare project state vs env config:
 
 1. Clone/fetch the repo content
 2. Look for `env-craft-module.json` in repo root
-3. Validate structure: must have `env-craft-module.json` + at least one of `rules/`, `skills/`, `agents/`
+3. Validate structure: must have `env-craft-module.json` + at least `skills_sh` or `rules/`
 4. Check compatibility with current base
 5. Copy into `ENV_CRAFT_ROOT/external/<module-name>/`
 6. Add to manifest with `source: "github:<owner>/<repo>"` and commit hash
@@ -129,49 +132,53 @@ Drift detection — compare project state vs env config:
 
 ### `/env-craft eject`
 
-1. The assembled files are already in `.claude/rules/`, `.claude/skills/`, `.claude/agents/`
+1. The assembled rules and installed skills remain in `.claude/`
 2. Remove `.claude/env-craft.json`
 3. Warn: "Environment ejected. Files are now standalone — env-craft commands will no longer work."
 
 ## Assembly Process
 
-**CRITICAL:** Use `Bash(cp ...)` commands for all file operations during assembly. Do NOT use the Write tool to copy template files — it triggers per-file permission prompts. A single Bash call with multiple `cp` commands requires only one permission approval.
-
 When assembling, follow this exact order:
 
-### Step 1: Prepare output directories and copy all files in one Bash call
+### Step 1: Copy tier rules
 
-Build a single Bash command that does everything:
+**CRITICAL:** Use a single `Bash` call for all file copies to avoid per-file permission prompts.
 
 ```bash
 # 1. Prepare directories
-mkdir -p .claude/rules .claude/skills .claude/agents
+mkdir -p .claude/rules
+
+# 2. Clean previous tier rules (only env-craft managed rules)
 rm -f .claude/rules/*.md
 
-# 2. Copy tier rules (for each active tier from manifest)
+# 3. Copy tier rules (for each active tier from manifest)
 cp ${ENV_CRAFT_ROOT}/tiers/<tier>/rules/*.md .claude/rules/ 2>/dev/null || true
-
-# 3. Copy base rules
-cp ${ENV_CRAFT_ROOT}/bases/<base>/rules/*.md .claude/rules/ 2>/dev/null || true
-
-# 4. Copy base skills (preserve per-skill subdirectories)
-# For each skill dir in bases/<base>/skills/:
-cp -r ${ENV_CRAFT_ROOT}/bases/<base>/skills/<skill-name> .claude/skills/ 2>/dev/null || true
-
-# 5. Copy base agents (preserve per-agent subdirectories)
-# For each agent dir in bases/<base>/agents/:
-cp -r ${ENV_CRAFT_ROOT}/bases/<base>/agents/<agent-name> .claude/agents/ 2>/dev/null || true
-
-# 6. Copy module rules/skills/agents (for each module)
-cp ${ENV_CRAFT_ROOT}/modules/<module>/rules/*.md .claude/rules/ 2>/dev/null || true
-# Same pattern for skills/ and agents/ subdirectories
 ```
 
-Combine ALL copy operations into a **single Bash tool call** chained with `&&` or `;`. This way the user approves once.
+Combine ALL copy operations into a **single Bash tool call**. This way the user approves once.
 
-Do NOT delete `.claude/skills/` contents blindly — it may contain other skills not managed by env-craft.
+### Step 2: Install skills from skills.sh
 
-### Step 2: Generate CLAUDE.md
+Collect all `skills_sh` entries from:
+- The base's `env-craft-module.json`
+- Each active module's `env-craft-module.json`
+
+Build a single install command:
+
+```bash
+npx skills add <package1> <package2> ... -y
+```
+
+For example, for a Nuxt project with +ui-nuxt-ui and +content-nuxt:
+```bash
+npx skills add antfu/skills@nuxt antfu/skills@vue wshobson/agents@typescript-advanced-types nuxt/ui@nuxt-ui onmax/nuxt-skills@nuxt-content -y
+```
+
+**Before installing**, check which skills are already in `.claude/skills/` to avoid reinstalling. Show the user what will be installed and ask for confirmation.
+
+**If `npx skills` is not available**, fall back to showing manual install instructions.
+
+### Step 3: Generate CLAUDE.md
 
 Generate a `CLAUDE.md` file at the project root with:
 
@@ -179,7 +186,7 @@ Generate a `CLAUDE.md` file at the project root with:
 # [Project Name]
 
 ## Tech Stack
-[Auto-detected: framework, UI library, key dependencies]
+[Auto-detected: framework, UI library, key dependencies with versions]
 
 ## Development
 [Commands from package.json scripts: dev, build, test, lint, typecheck]
@@ -187,32 +194,20 @@ Generate a `CLAUDE.md` file at the project root with:
 ## Project Structure
 [Brief description of key directories based on actual folder scan]
 
-## Rules
-This project uses env-craft rules in `.claude/rules/`. Run `/env-craft list` to see the current configuration.
+## Environment
+Managed by env-craft. Run `/env-craft list` to see current configuration.
+- Quality rules in `.claude/rules/` (tier: @size)
+- Tech skills in `.claude/skills/` (from skills.sh)
 ```
 
 **IMPORTANT:** Read the existing `CLAUDE.md` first. If it exists, ask the user whether to replace it, merge with it, or skip. Never silently overwrite.
 
-### Step 3: Recommend skills
-
-Read the `skills_sh` field from each active module's `env-craft-module.json` and from the base's `env-craft-module.json`. Collect all recommended skill names.
-
-Present the list to the user:
-```
-Recommended skills for your stack:
-- nuxt (from base: frontend-nuxt)
-- nuxt-content (from module: +content-nuxt)
-- nuxt-ui (from module: +ui-nuxt-ui)
-- vueuse (from module: +vueuse)
-
-Install them? You can install from skills.sh or manually.
-```
-
-If the user confirms, check if the skills are already installed in `.claude/skills/`. For skills available on skills.sh, suggest the install command. Don't auto-install without confirmation.
-
 ### Step 4: Update manifest
 
-Use the Write tool to create/update `.claude/env-craft.json` with current config and set `assembled_at` to current ISO timestamp.
+Use the Write tool to create/update `.claude/env-craft.json` with:
+- `version`, `base`, `size`, `tiers`, `modules`
+- `installed_skills`: list of skills.sh packages that were installed
+- `assembled_at`: current ISO timestamp
 
 ## Auto-Detection Heuristics
 
@@ -231,6 +226,14 @@ When scanning a project for `/env-craft init`:
 - `@nuxt/content` → suggest `+content-nuxt`
 - `@vueuse/core` or `@vueuse/nuxt` → suggest `+vueuse`
 
+**Extra skills detection** (dependencies that don't have a module but have a skills.sh skill):
+- `drizzle-orm` → suggest installing `bobmatnyc/claude-mpm-skills@drizzle-orm`
+- `tailwindcss` → suggest installing `wshobson/agents@tailwind-design-system`
+- `motion-v` or `@vueuse/motion` → suggest installing `onmax/nuxt-skills@motion`
+- `@nuxt/seo` or `@nuxtjs/sitemap` → suggest installing `onmax/nuxt-skills@nuxt-seo`
+
+Present extra skills as optional additions during init.
+
 **Size estimation**:
 - Count `.vue` files, `.ts` files, directories under `src/` or `app/`
 - < 15 components, < 30 total files → suggest `@small`
@@ -241,6 +244,6 @@ When scanning a project for `/env-craft init`:
 
 - **Never auto-apply** — always show what will change and ask for confirmation
 - **Idempotent assembly** — running assemble twice produces the same result
-- **Backward compatible** — adding a module never removes existing rules
 - **Transparent** — always report what was added/removed/changed
 - **Portable** — all source paths resolved via `${CLAUDE_SKILL_DIR}`, works from any project
+- **Community-first** — use skills.sh for tech knowledge, keep only quality tiers as own content
