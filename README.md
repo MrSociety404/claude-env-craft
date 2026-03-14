@@ -7,26 +7,31 @@ Claude Code plugin that makes any project AI-ready. Scans your tech stack, disco
 env-craft is an **AI environment architect** that works with any language and framework:
 
 1. **Scans** your project — detects language, framework, dependencies, project size
-2. **Discovers** relevant skills from [skills.sh](https://skills.sh) — searches dynamically, no hardcoded mappings
-3. **Applies** quality tier rules — DRY, SOLID, clean-code patterns scaled by project size
-4. **Generates** CLAUDE.md — tech stack, dev commands, project structure, all auto-detected
-5. **You choose** — env-craft presents findings and recommendations, you decide what to install
+2. **Discovers** tech skills from [skills.sh](https://skills.sh) — searches dynamically, no hardcoded mappings
+3. **Suggests** workflow skills — brainstorming, planning, git workflows, debugging (from [obra/superpowers](https://skills.sh/obra/superpowers) and others)
+4. **Applies** quality tier rules — DRY, SOLID, clean-code patterns scaled by project size
+5. **Generates** CLAUDE.md — tech stack, dev commands, project structure, all auto-detected
+6. **You choose** — env-craft presents findings and recommendations, you decide what to install
 
 Works with: JavaScript/TypeScript, Python, Rust, Go, Ruby, PHP, Java/Kotlin, Dart/Flutter, C#/.NET, and any project with a dependency file.
 
 ## Install
 
-### From GitHub
+### Option 1: Clone and add as plugin
 
 ```bash
-# Clone the repo
-git clone https://github.com/MrSociety404/claude-env-craft.git
-
-# Use it as a plugin
-claude --plugin-dir ./claude-env-craft
+git clone https://github.com/MrSociety404/claude-env-craft.git ~/.claude/plugins/env-craft
 ```
 
-### Local development / testing
+Then add to your Claude Code settings (`.claude/settings.json`):
+
+```json
+{
+  "plugins": ["~/.claude/plugins/env-craft"]
+}
+```
+
+### Option 2: Per-session
 
 ```bash
 claude --plugin-dir /path/to/claude-env-craft
@@ -43,11 +48,11 @@ After installation, run `/env-craft init` in Claude Code.
 
 env-craft will:
 1. Detect your stack (e.g., "Nuxt 4 + TypeScript + Tailwind + Drizzle")
-2. Search skills.sh for matching skills
-3. Show you what it found with install counts
-4. Let you pick which skills to install
-5. Apply quality rules based on project size
-6. Generate a CLAUDE.md
+2. **Phase 1 — Tech skills:** Search skills.sh for stack-specific skills, show results, let you pick
+3. **Phase 2 — Workflow skills:** Suggest developer workflow tools (brainstorming, planning, git, debugging) — install all or pick categories
+4. Apply quality rules based on project size
+5. Generate a CLAUDE.md
+6. Store everything in `.agents/` with symlinks from `.claude/`
 
 ## Commands
 
@@ -91,16 +96,21 @@ env-craft's own content — framework-agnostic code quality rules that scale wit
            ▼
 ┌─────────────────────┐
 │  3. Present & Choose │  Show findings table, user picks what to install
-│     User decides     │  Never auto-install anything
+│     Tech skills      │  Never auto-install anything
 └──────────┬──────────┘
            ▼
 ┌─────────────────────┐
-│  4. Install          │  npx skills add ... -a claude-code -y
-│     Skills + Rules   │  Copy tier rules to .claude/rules/
+│  4. Workflow Skills  │  Suggest brainstorming, planning, git, debugging
+│     Choose category  │  all / git / planning / creative / quality / skip
 └──────────┬──────────┘
            ▼
 ┌─────────────────────┐
-│  5. Generate         │  CLAUDE.md + .claude/env-craft.json manifest
+│  5. Install          │  npx skills add ... -a claude-code -y
+│     Skills + Rules   │  Everything in .agents/ with .claude/ symlinks
+└──────────┬──────────┘
+           ▼
+┌─────────────────────┐
+│  6. Generate         │  CLAUDE.md + .claude/env-craft.json manifest
 │     CLAUDE.md        │  Full project context for Claude
 └─────────────────────┘
 ```
@@ -129,6 +139,6 @@ env-craft/
 
 - [ ] Publish to official Claude plugin marketplace
 - [ ] Skills cache to avoid repeated searches
-- [ ] Suggest project-specific agents (PR review, testing, deployment)
 - [ ] Detect and configure hooks for CI/CD integration
 - [ ] Auto-generate `.claude/commands/` for common project tasks
+- [ ] Custom rule generation from code analysis (Vision B)

@@ -112,6 +112,35 @@ Select skills to install (e.g., "1,2,3,4" or "all" or "none"):
 
 **Never auto-install.** Always let the user pick.
 
+#### Step 3b: Suggest workflow skills
+
+After tech skills, present workflow skills. These are useful for ANY project regardless of stack.
+
+```
+### Workflow Skills
+
+These aren't tech-specific — they improve how you work with Claude on any project.
+
+| Category | Skills | Source |
+|----------|--------|--------|
+| **Git & PRs** | committing, finishing-a-development-branch, requesting-code-review, receiving-code-review | `obra/superpowers` |
+| **Planning** | writing-plans, executing-plans, subagent-driven-development | `obra/superpowers` |
+| **Creative** | brainstorming, document-writer | `obra/superpowers` / `github/awesome-copilot` |
+| **Quality** | verification-before-completion, systematic-debugging, test-driven-development | `obra/superpowers` |
+| **Advanced** | dispatching-parallel-agents, using-git-worktrees | `obra/superpowers` |
+
+Install? (all/git/planning/creative/quality/pick/skip):
+```
+
+Install selected workflow skills with the same `-a claude-code -y` flags and `.agents/` + symlink pattern.
+
+**Recommended default:** suggest "all" from `obra/superpowers` — it's a trusted, high-install-count package (55K+) that covers the full developer workflow.
+
+```bash
+# Install all obra/superpowers skills
+npx skills add obra/superpowers -a claude-code -y
+```
+
 #### Step 4: Install selected skills and tier rules
 
 **IMPORTANT: Use the `.agents/` + symlink pattern.**
@@ -222,9 +251,12 @@ Write `.claude/env-craft.json`:
   "version": "1.0.0",
   "size": "medium",
   "tiers": ["core", "structure"],
-  "installed_skills": [
+  "tech_skills": [
     "antfu/skills@nuxt",
     "nuxt/ui@nuxt-ui"
+  ],
+  "workflow_skills": [
+    "obra/superpowers"
   ],
   "detected_stack": {
     "language": "typescript",
