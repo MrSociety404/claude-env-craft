@@ -1,0 +1,5 @@
+{
+  "name": "large",
+  "description": "Full env — core quality + structure + design patterns.",
+  "tiers": ["core", "structure", "patterns"]
+}

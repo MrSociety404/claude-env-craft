@@ -1,0 +1,7 @@
+{
+  "name": "content-nuxt",
+  "type": "module",
+  "description": "Nuxt Content v3 patterns — collections, MDC, content queries, and schema definitions",
+  "compat": ["frontend-nuxt", "fullstack-nuxt"],
+  "skills_sh": ["nuxt-content"]
+}

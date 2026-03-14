@@ -1,0 +1,7 @@
+{
+  "name": "large-nuxt-i18n",
+  "description": "Large Nuxt app with i18n, Nuxt UI, Pinia, and full architecture patterns",
+  "base": "frontend-nuxt",
+  "size": "large",
+  "modules": ["i18n", "pinia", "ui-nuxt-ui", "content-nuxt", "vueuse"]
+}

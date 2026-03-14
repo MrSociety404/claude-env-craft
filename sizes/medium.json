@@ -1,0 +1,5 @@
+{
+  "name": "medium",
+  "description": "Balanced env — core quality + structural conventions.",
+  "tiers": ["core", "structure"]
+}

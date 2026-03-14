@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "env-craft manifest",
+  "description": "Tracks the current claude-env-craft environment configuration",
+  "type": "object",
+  "required": ["version", "base", "size", "tiers", "modules"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Manifest schema version",
+      "enum": ["1.0.0"]
+    },
+    "base": {
+      "type": "string",
+      "description": "Base template name (e.g. frontend-nuxt, backend-node)"
+    },
+    "size": {
+      "type": "string",
+      "enum": ["small", "medium", "large"],
+      "description": "Size modifier controlling tier activation"
+    },
+    "tiers": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["core", "structure", "patterns"] },
+      "description": "Active tiers (derived from size)"
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "source"],
+        "properties": {
+          "name": { "type": "string" },
+          "source": {
+            "type": "string",
+            "description": "builtin | github:<owner>/<repo> | skills.sh:<owner>/<repo>"
+          },
+          "commit": {
+            "type": "string",
+            "description": "Git commit hash for external modules"
+          }
+        }
+      }
+    },
+    "preset": {
+      "type": ["string", "null"],
+      "description": "Preset name if initialized from preset, null otherwise"
+    },
+    "assembled_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp of last assembly"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "small",
+  "description": "Lightweight env — core quality rules only. No architecture enforcement.",
+  "tiers": ["core"]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "pinia",
+  "type": "module",
+  "description": "Pinia store patterns, conventions, and best practices",
+  "compat": ["frontend-nuxt", "fullstack-nuxt"],
+  "skills_sh": []
+}

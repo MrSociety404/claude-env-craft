@@ -1,0 +1,7 @@
+{
+  "name": "frontend-nuxt",
+  "type": "base",
+  "description": "Base template for Nuxt 4+ frontend applications",
+  "compat": [],
+  "skills_sh": ["nuxt", "typescript-advanced-types"]
+}

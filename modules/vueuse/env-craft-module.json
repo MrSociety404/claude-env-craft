@@ -1,0 +1,7 @@
+{
+  "name": "vueuse",
+  "type": "module",
+  "description": "VueUse composable patterns — prefer VueUse utilities over custom implementations",
+  "compat": ["frontend-nuxt", "fullstack-nuxt"],
+  "skills_sh": ["vueuse"]
+}

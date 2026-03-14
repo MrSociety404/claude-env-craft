@@ -1,0 +1,7 @@
+{
+  "name": "i18n",
+  "type": "module",
+  "description": "Internationalization conventions, translation key patterns, locale file structure",
+  "compat": ["frontend-nuxt", "fullstack-nuxt"],
+  "skills_sh": []
+}

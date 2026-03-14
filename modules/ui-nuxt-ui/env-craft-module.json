@@ -1,0 +1,7 @@
+{
+  "name": "ui-nuxt-ui",
+  "type": "module",
+  "description": "Nuxt UI v4 component usage patterns and theming conventions",
+  "compat": ["frontend-nuxt", "fullstack-nuxt"],
+  "skills_sh": ["nuxt-ui"]
+}
