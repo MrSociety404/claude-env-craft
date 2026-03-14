@@ -114,22 +114,60 @@ Select skills to install (e.g., "1,2,3,4" or "all" or "none"):
 
 #### Step 4: Install selected skills and tier rules
 
-**Install skills** (one Bash call):
+**IMPORTANT: Use the `.agents/` + symlink pattern.**
+
+All real files go into `.agents/`, with symlinks in `.claude/` pointing to them. This is the standard project layout:
+
+```
+.agents/
+├── rules/          # Real rule files (or symlinks to plugin)
+├── skills/         # Real skill files (installed by skills.sh)
+└── commands/       # Real command files
+.claude/
+├── rules/          # Symlinks → ../.agents/rules/*
+└── skills/         # Symlinks → ../.agents/skills/*
+```
+
+**Install skills** into `.agents/skills/`, symlink from `.claude/skills/`:
+
 ```bash
+# Create .agents structure
+mkdir -p .agents/skills .agents/rules
+
+# Install skills into .agents/skills/
 npx skills add <package1> <package2> ... -a claude-code -y
 ```
 
-Flags:
-- `-a claude-code` — install only for Claude Code (not cursor/windsurf/etc.)
-- No `-g` — project scope (default), not global
-- Symlink is the default (do NOT use `--copy`)
-- `-y` — skip skills CLI confirmation
+After skills.sh installs into `.claude/skills/`, move them to `.agents/skills/` and create symlinks back:
 
-**Copy tier rules** (one Bash call):
 ```bash
-mkdir -p .claude/rules
-cp ${ENV_CRAFT_ROOT}/tiers/<tier>/rules/*.md .claude/rules/ 2>/dev/null || true
+# For each newly installed skill directory in .claude/skills/
+for skill in .claude/skills/*/; do
+  name=$(basename "$skill")
+  # Skip if already a symlink (already managed)
+  [ -L "$skill" ] && continue
+  # Move to .agents and create symlink
+  mv "$skill" .agents/skills/
+  ln -sfn "../../.agents/skills/$name" ".claude/skills/$name"
+done
 ```
+
+**Symlink tier rules** into `.agents/rules/`, symlink from `.claude/rules/`:
+
+```bash
+mkdir -p .agents/rules .claude/rules
+
+# For each active tier, symlink rule files into .agents/rules/
+for f in ${ENV_CRAFT_ROOT}/tiers/<tier>/rules/*.md; do
+  ln -sfn "$f" .agents/rules/"$(basename "$f")"
+done
+
+# Then symlink .claude/rules/ → .agents/rules/ (directory symlink)
+rm -rf .claude/rules
+ln -sfn ../.agents/rules .claude/rules
+```
+
+Use absolute paths for the plugin tier symlink targets so they work regardless of the current directory.
 
 #### Step 5: Generate CLAUDE.md
 
@@ -244,7 +282,8 @@ Search and install additional skills:
 2. Present results
 3. User picks
 4. Install with `npx skills add <package> -a claude-code -y`
-5. Update manifest
+5. Move installed skills from `.claude/skills/` to `.agents/skills/` and create symlinks back
+6. Update manifest
 
 ### `/env-craft remove <skill-name>`
 
@@ -254,9 +293,12 @@ Search and install additional skills:
 
 ### `/env-craft eject`
 
-1. Skills and rules remain in `.claude/`
+1. Convert all symlinks in `.agents/rules/` to real files (so they survive plugin removal):
+   ```bash
+   for f in .agents/rules/*.md; do [ -L "$f" ] && cp --remove-destination "$(readlink -f "$f")" "$f"; done
+   ```
 2. Remove `.claude/env-craft.json`
-3. Rules in `.claude/rules/` are yours to keep or delete
+3. `.agents/` and `.claude/` symlinks remain — yours to keep or delete
 4. Warn: "Environment ejected. Files are now standalone — env-craft commands will no longer work."
 
 ## Size Estimation
