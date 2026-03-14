@@ -1,7 +1,0 @@
-{
-  "name": "medium-nuxt",
-  "description": "Mid-size Nuxt app with structured conventions",
-  "base": "frontend-nuxt",
-  "size": "medium",
-  "modules": ["ui-nuxt-ui", "vueuse"]
-}

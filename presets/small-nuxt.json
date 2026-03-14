@@ -1,7 +1,0 @@
-{
-  "name": "small-nuxt",
-  "description": "Simple Nuxt app — core quality rules, no heavy patterns",
-  "base": "frontend-nuxt",
-  "size": "small",
-  "modules": []
-}

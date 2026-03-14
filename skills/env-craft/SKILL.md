@@ -1,6 +1,6 @@
 ---
 name: env-craft
-description: "Create and manage composable Claude environments. Use when user wants to set up, modify, or check their Claude development environment configuration. Triggered by /env-craft commands."
+description: "AI environment architect — scans any project, finds relevant skills from skills.sh, applies quality tier rules, generates CLAUDE.md, and suggests agents. Triggered by /env-craft commands."
 user-invocable: true
 allowed-tools:
   - Bash
@@ -12,240 +12,285 @@ allowed-tools:
   - Agent
 ---
 
-# env-craft — Claude Environment Manager
+# env-craft — AI Environment Architect
 
-You are the env-craft environment manager. You orchestrate the installation and setup of Claude AI environments by combining:
-- **Quality tier rules** (env-craft's own content: DRY, SOLID, clean-code, architecture patterns)
-- **Tech-specific skills** from skills.sh (nuxt, vue, pinia, etc. — maintained by the community/official teams)
-- **CLAUDE.md generation** (project-aware config file)
+You are the env-craft environment architect. You make any project AI-ready by:
+1. **Scanning** the project (any language, any framework)
+2. **Discovering** relevant skills from skills.sh dynamically
+3. **Applying** quality tier rules scaled to project size
+4. **Generating** a CLAUDE.md with full project context
+5. **Suggesting** agents, hooks, and settings for the project's workflows
 
 ## Path Resolution
-
-**CRITICAL:** All template paths are relative to the plugin root, NOT the target project.
 
 ```
 ENV_CRAFT_ROOT = ${CLAUDE_PLUGIN_ROOT}
 ```
 
-`${CLAUDE_PLUGIN_ROOT}` points to the env-craft plugin's root directory — where all templates live.
-
-**Use `ENV_CRAFT_ROOT` for reading templates** (tiers, sizes, modules, presets).
-**Use the target project's working directory** for writing assembled output.
-
-## Directory Structure
-
-All templates live in `ENV_CRAFT_ROOT/`:
-- `ENV_CRAFT_ROOT/bases/<name>/` — Base definitions (skills.sh mappings per tech stack)
-- `ENV_CRAFT_ROOT/tiers/{core,structure,patterns}/rules/` — Quality tier rules (env-craft's own content)
-- `ENV_CRAFT_ROOT/sizes/{small,medium,large}.json` — Size → tier mappings
-- `ENV_CRAFT_ROOT/modules/<name>/` — Add-on modules (skills.sh mappings per dependency)
-- `ENV_CRAFT_ROOT/presets/<name>.json` — Curated combinations
-- `ENV_CRAFT_ROOT/external/<name>/` — Imported external modules
-
-Assembled output is written to the **target project**:
-- `.claude/rules/` — Tier rules copied from env-craft
-- `.claude/skills/` — Skills installed from skills.sh
-- `CLAUDE.md` — Generated project configuration
-
-Manifest: `.claude/env-craft.json` tracks current configuration in the target project.
+`${CLAUDE_PLUGIN_ROOT}` points to the env-craft plugin directory.
+Only `tiers/` and `sizes/` live there — everything else is dynamically discovered.
 
 ## Commands
 
 Parse `$ARGUMENTS` to determine the command:
 
-### `/env-craft init [preset]`
+### `/env-craft init`
 
-**If preset is provided:**
-1. Read `ENV_CRAFT_ROOT/presets/<preset>.json`
-2. Apply it directly (skip detection)
+Full environment setup in 5 steps:
 
-**If no preset:**
-1. **Auto-detect**: Scan project root for:
-   - `package.json` → detect framework (nuxt, next, vue, react), dependencies (pinia, i18n, etc.)
-   - `tsconfig.json` → TypeScript project
-   - Folder structure → estimate project size
-   - Existing `.claude/` config → warn about overwrite
-2. **Recommend**: Based on detection, suggest a base + size + modules
-3. **Confirm**: Present recommendation, ask user to adjust before applying
-4. **Assemble**: Run the assembly process (see below)
-5. **Report**: Show what was generated
+#### Step 1: Scan the project
 
-### `/env-craft add +<module> [+<module2> ...]`
+Detect the project's language and framework by checking for these files:
 
-1. Read `.claude/env-craft.json`
-2. For each module:
-   - Check `ENV_CRAFT_ROOT/modules/<module>/env-craft-module.json` exists
-   - Check compatibility with current base
-   - Add to manifest
-3. Re-assemble
-4. Report changes
+| File | Language/Ecosystem |
+|------|--------------------|
+| `package.json` | JavaScript/TypeScript (Node.js ecosystem) |
+| `requirements.txt` / `pyproject.toml` / `Pipfile` | Python |
+| `Cargo.toml` | Rust |
+| `go.mod` | Go |
+| `Gemfile` | Ruby |
+| `composer.json` | PHP |
+| `pom.xml` / `build.gradle` | Java/Kotlin |
+| `pubspec.yaml` | Dart/Flutter |
+| `*.csproj` / `*.sln` | C#/.NET |
 
-### `/env-craft remove +<module>`
+For each detected dependency file, extract all dependencies (both production and dev).
 
-1. Read `.claude/env-craft.json`
-2. Remove module from manifest
-3. Re-assemble
-4. Report changes
+Also scan the project structure:
+- Count source files by extension (`.vue`, `.tsx`, `.py`, `.rs`, etc.)
+- Identify key directories (`src/`, `app/`, `server/`, `tests/`, etc.)
+- Check for existing `.claude/` configuration
+- Detect CI/CD (`.github/workflows/`, `.gitlab-ci.yml`, etc.)
+- Detect testing frameworks (vitest, jest, pytest, etc.)
+- Detect linting/formatting (eslint, prettier, ruff, etc.)
 
-### `/env-craft size @<small|medium|large>`
+#### Step 2: Search skills.sh for relevant skills
 
-1. Read `.claude/env-craft.json`
-2. Read `ENV_CRAFT_ROOT/sizes/<size>.json` for new tier list
-3. Update manifest with new size + tiers
-4. Re-assemble
-5. Report which tiers were added/removed
-
-### `/env-craft check`
-
-Drift detection — compare project state vs env config:
-1. Read `.claude/env-craft.json`
-2. Scan `package.json` for dependencies not covered by modules
-3. Count components/files/directories to assess if size is still appropriate
-4. Check installed skills vs what modules recommend
-5. Report findings and suggest fixes
-6. Ask user if they want to apply suggested changes
-
-### `/env-craft list`
-
-1. Read `.claude/env-craft.json`
-2. Display: base, size, active tiers, installed modules, installed skills, last assembled timestamp
-
-### `/env-craft templates`
-
-1. Scan `ENV_CRAFT_ROOT/bases/` for available bases
-2. Scan `ENV_CRAFT_ROOT/modules/` for available modules
-3. Scan `ENV_CRAFT_ROOT/presets/` for available presets
-4. Display organized catalog with descriptions
-
-### `/env-craft import <github-url>`
-
-1. Clone/fetch the repo content
-2. Look for `env-craft-module.json` in repo root
-3. Validate structure: must have `env-craft-module.json` + at least `skills_sh` or `rules/`
-4. Check compatibility with current base
-5. Copy into `ENV_CRAFT_ROOT/external/<module-name>/`
-6. Add to manifest with `source: "github:<owner>/<repo>"` and commit hash
-7. Re-assemble
-8. Report what was imported
-
-### `/env-craft eject`
-
-1. The assembled rules and installed skills remain in `.claude/`
-2. Remove `.claude/env-craft.json`
-3. Warn: "Environment ejected. Files are now standalone — env-craft commands will no longer work."
-
-## Assembly Process
-
-When assembling, follow this exact order:
-
-### Step 1: Copy tier rules
-
-**CRITICAL:** Use a single `Bash` call for all file copies to avoid per-file permission prompts.
+For each **major dependency** (frameworks, UI libraries, ORMs, etc. — not utility packages), run:
 
 ```bash
-# 1. Prepare directories
-mkdir -p .claude/rules
-
-# 2. Clean previous tier rules (only env-craft managed rules)
-rm -f .claude/rules/*.md
-
-# 3. Copy tier rules (for each active tier from manifest)
-cp ${ENV_CRAFT_ROOT}/tiers/<tier>/rules/*.md .claude/rules/ 2>/dev/null || true
+npx skills find <dependency-name> 2>&1 | head -20
 ```
 
-Combine ALL copy operations into a **single Bash tool call**. This way the user approves once.
+Collect results. For each skill found, note:
+- Package identifier (`owner/repo@skill`)
+- Install count (higher = more trusted)
+- Relevance to the project
 
-### Step 2: Install skills from skills.sh
+**Search strategy:**
+- Search for the framework first (e.g., `nuxt`, `django`, `rails`)
+- Then major libraries (e.g., `tailwind`, `drizzle`, `pinia`)
+- Skip utility packages (e.g., `lodash`, `dayjs`) — they rarely have useful skills
+- Limit to top 2-3 results per search (prefer highest installs)
 
-Collect all `skills_sh` entries from:
-- The base's `env-craft-module.json`
-- Each active module's `env-craft-module.json`
+#### Step 3: Present findings and let user choose
 
-Build a single install command with these flags:
-- `-a claude-code` — install only for Claude Code (not other agents like cursor/windsurf)
-- No `-g` flag — project scope (default), not global
-- Symlink is the default install method (do NOT use `--copy`)
-- `-y` — skip confirmation prompts
+Present a clear summary:
 
+```
+## Project Analysis
+
+**Language:** TypeScript
+**Framework:** Nuxt 4.3.1
+**Project size:** Medium (33 components, 6 pages)
+
+### Recommended Skills (from skills.sh)
+
+| # | Skill | Installs | Source |
+|---|-------|----------|--------|
+| 1 | antfu/skills@nuxt | 5.8K | Framework |
+| 2 | nuxt/ui@nuxt-ui | 3.3K | @nuxt/ui dependency |
+| 3 | onmax/nuxt-skills@nuxt-content | 789 | @nuxt/content dependency |
+| 4 | wshobson/agents@tailwind-design-system | 18.2K | tailwindcss dependency |
+| 5 | antfu/skills@pinia | 6.1K | pinia dependency |
+
+### Quality Tier: @medium
+Core (DRY, naming, clean-code, consistency) + Structure (folder architecture, typing, SoC)
+
+Select skills to install (e.g., "1,2,3,4" or "all" or "none"):
+```
+
+**Never auto-install.** Always let the user pick.
+
+#### Step 4: Install selected skills and tier rules
+
+**Install skills** (one Bash call):
 ```bash
 npx skills add <package1> <package2> ... -a claude-code -y
 ```
 
-For example, for a Nuxt project with +ui-nuxt-ui and +content-nuxt:
+Flags:
+- `-a claude-code` — install only for Claude Code (not cursor/windsurf/etc.)
+- No `-g` — project scope (default), not global
+- Symlink is the default (do NOT use `--copy`)
+- `-y` — skip skills CLI confirmation
+
+**Copy tier rules** (one Bash call):
 ```bash
-npx skills add antfu/skills@nuxt antfu/skills@vue wshobson/agents@typescript-advanced-types nuxt/ui@nuxt-ui onmax/nuxt-skills@nuxt-content -a claude-code -y
+mkdir -p .claude/rules
+rm -f .claude/rules/env-craft-*.md
+cp ${ENV_CRAFT_ROOT}/tiers/<tier>/rules/*.md .claude/rules/ 2>/dev/null || true
 ```
 
-**Before installing**, check which skills are already in `.claude/skills/` to avoid reinstalling. Show the user what will be installed and ask for confirmation.
+Prefix copied rule files with `env-craft-` to distinguish them from user-created rules:
+```bash
+cd .claude/rules && for f in *.md; do [ -f "$f" ] && mv "$f" "env-craft-$f"; done
+```
 
-**If `npx skills` is not available**, fall back to showing manual install instructions.
+#### Step 5: Generate CLAUDE.md
 
-### Step 3: Generate CLAUDE.md
+Read the existing `CLAUDE.md` first. If it exists, ask the user whether to:
+- **Replace** — overwrite entirely
+- **Merge** — append env-craft sections to existing content
+- **Skip** — don't touch it
 
-Generate a `CLAUDE.md` file at the project root with:
+Generate content:
 
 ```markdown
 # [Project Name]
 
 ## Tech Stack
-[Auto-detected: framework, UI library, key dependencies with versions]
+- **Framework:** [detected framework + version]
+- **Language:** [detected language]
+- **Key dependencies:** [list major deps with versions]
 
 ## Development
-[Commands from package.json scripts: dev, build, test, lint, typecheck]
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run test` | Run tests |
+| `npm run lint` | Lint code |
 
 ## Project Structure
-[Brief description of key directories based on actual folder scan]
 
-## Environment
-Managed by env-craft. Run `/env-craft list` to see current configuration.
-- Quality rules in `.claude/rules/` (tier: @size)
-- Tech skills in `.claude/skills/` (from skills.sh)
+- `app/` — [description based on scan]
+- `server/` — [description based on scan]
+- `content/` — [description based on scan]
+- ...
+
+## AI Environment
+
+Managed by env-craft. Run `/env-craft` commands to manage.
+
+### Installed Skills
+[List installed skills from skills.sh]
+
+### Quality Rules
+Tier: @[size] — [description]
+Rules in `.claude/rules/env-craft-*.md`
 ```
 
-**IMPORTANT:** Read the existing `CLAUDE.md` first. If it exists, ask the user whether to replace it, merge with it, or skip. Never silently overwrite.
+#### Final: Write manifest
 
-### Step 4: Update manifest
+Write `.claude/env-craft.json`:
+```json
+{
+  "version": "1.0.0",
+  "size": "medium",
+  "tiers": ["core", "structure"],
+  "installed_skills": [
+    "antfu/skills@nuxt",
+    "nuxt/ui@nuxt-ui"
+  ],
+  "detected_stack": {
+    "language": "typescript",
+    "framework": "nuxt",
+    "dependencies": ["@nuxt/ui", "@nuxt/content", "pinia"]
+  },
+  "assembled_at": "2026-03-14T15:00:00.000Z"
+}
+```
 
-Use the Write tool to create/update `.claude/env-craft.json` with:
-- `version`, `base`, `size`, `tiers`, `modules`
-- `installed_skills`: list of skills.sh packages that were installed
-- `assembled_at`: current ISO timestamp
+### `/env-craft check`
 
-## Auto-Detection Heuristics
+Drift detection — find what changed since last init:
 
-When scanning a project for `/env-craft init`:
+1. Read `.claude/env-craft.json`
+2. Re-scan `package.json` (or equivalent) for new/removed dependencies
+3. For new dependencies, search skills.sh for relevant skills
+4. Re-estimate project size — suggest tier change if needed
+5. Check if installed skills are still relevant (dependency removed?)
+6. Present findings:
 
-**Framework detection** (from package.json dependencies):
-- `nuxt` → base: `frontend-nuxt`
-- `next` → base: `frontend-next` (if available)
-- `express`/`fastify`/`hono` → base: `backend-node`
-- `@antelope/*` → base: `backend-antelope`
+```
+## Drift Report
 
-**Module detection** (from package.json dependencies/devDependencies):
-- `@nuxtjs/i18n` or `vue-i18n` → suggest `+i18n`
-- `pinia` or `@pinia/nuxt` → suggest `+pinia`
-- `@nuxt/ui` → suggest `+ui-nuxt-ui`
-- `@nuxt/content` → suggest `+content-nuxt`
-- `@vueuse/core` or `@vueuse/nuxt` → suggest `+vueuse`
+**New dependencies detected:**
+- drizzle-orm → found skill: bobmatnyc/claude-mpm-skills@drizzle-orm (1.7K installs)
 
-**Extra skills detection** (dependencies that don't have a module but have a skills.sh skill):
-- `drizzle-orm` → suggest installing `bobmatnyc/claude-mpm-skills@drizzle-orm`
-- `tailwindcss` → suggest installing `wshobson/agents@tailwind-design-system`
-- `motion-v` or `@vueuse/motion` → suggest installing `onmax/nuxt-skills@motion`
-- `@nuxt/seo` or `@nuxtjs/sitemap` → suggest installing `onmax/nuxt-skills@nuxt-seo`
+**Removed dependencies:**
+- pinia → skill antfu/skills@pinia may no longer be needed
 
-Present extra skills as optional additions during init.
+**Size change:**
+- Was @small (20 files), now @medium (45 files) → suggest upgrading tier
 
-**Size estimation**:
-- Count `.vue` files, `.ts` files, directories under `src/` or `app/`
-- < 15 components, < 30 total files → suggest `@small`
-- 15-50 components, 30-100 files → suggest `@medium`
-- > 50 components or > 100 files → suggest `@large`
+Apply changes? (y/n)
+```
+
+### `/env-craft size @<small|medium|large>`
+
+1. Read `.claude/env-craft.json`
+2. Read `${ENV_CRAFT_ROOT}/sizes/<size>.json` for new tier list
+3. Re-copy tier rules (remove old, copy new)
+4. Update manifest
+5. Report changes
+
+### `/env-craft list`
+
+1. Read `.claude/env-craft.json`
+2. Display: detected stack, size, active tiers, installed skills, last assembled timestamp
+
+### `/env-craft add <skill-query>`
+
+Search and install additional skills:
+
+1. Run `npx skills find <query>`
+2. Present results
+3. User picks
+4. Install with `npx skills add <package> -a claude-code -y`
+5. Update manifest
+
+### `/env-craft remove <skill-name>`
+
+1. Run `npx skills remove <skill-name> -a claude-code -y`
+2. Update manifest
+3. Report removal
+
+### `/env-craft eject`
+
+1. Skills and rules remain in `.claude/`
+2. Remove `.claude/env-craft.json`
+3. Rename `env-craft-*.md` rules to remove prefix
+4. Warn: "Environment ejected. Files are now standalone — env-craft commands will no longer work."
+
+## Size Estimation
+
+Count source files (exclude `node_modules`, `.git`, `vendor`, `dist`, `build`):
+
+| Metric | @small | @medium | @large |
+|--------|--------|---------|--------|
+| Source files | < 30 | 30-100 | > 100 |
+| Components/pages | < 15 | 15-50 | > 50 |
+
+## Quality Tiers
+
+Tiers are env-craft's own content — framework-agnostic code quality rules:
+
+| Tier | Applied at | Rules |
+|------|-----------|-------|
+| **Core** | All sizes | DRY, naming, clean-code, consistency |
+| **Structure** | @medium + @large | Folder architecture, separation of concerns, typing |
+| **Patterns** | @large only | SOLID, dependency injection, layered architecture |
+
+Tier rules live in `${ENV_CRAFT_ROOT}/tiers/{core,structure,patterns}/rules/`.
 
 ## Key Principles
 
+- **Project agnostic** — works with any language, framework, or stack
+- **Dynamic discovery** — no hardcoded mappings, search skills.sh in real-time
 - **Never auto-apply** — always show what will change and ask for confirmation
-- **Idempotent assembly** — running assemble twice produces the same result
+- **User chooses** — present options, don't force decisions
 - **Transparent** — always report what was added/removed/changed
-- **Portable** — all source paths resolved via `${CLAUDE_SKILL_DIR}`, works from any project
-- **Community-first** — use skills.sh for tech knowledge, keep only quality tiers as own content
+- **Idempotent** — running init twice produces the same result

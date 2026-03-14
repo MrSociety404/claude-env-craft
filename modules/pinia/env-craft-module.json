@@ -1,9 +1,0 @@
-{
-  "name": "pinia",
-  "type": "module",
-  "description": "Pinia state management — installs Pinia skill from skills.sh",
-  "compat": ["frontend-nuxt", "fullstack-nuxt"],
-  "skills_sh": [
-    "antfu/skills@pinia"
-  ]
-}

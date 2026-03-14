@@ -1,9 +1,0 @@
-{
-  "name": "content-nuxt",
-  "type": "module",
-  "description": "Nuxt Content v3 — installs Nuxt Content skill from skills.sh",
-  "compat": ["frontend-nuxt", "fullstack-nuxt"],
-  "skills_sh": [
-    "onmax/nuxt-skills@nuxt-content"
-  ]
-}

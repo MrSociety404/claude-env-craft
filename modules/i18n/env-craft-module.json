@@ -1,7 +1,0 @@
-{
-  "name": "i18n",
-  "type": "module",
-  "description": "Internationalization — installs @nuxtjs/i18n skill from skills.sh",
-  "compat": ["frontend-nuxt", "fullstack-nuxt"],
-  "skills_sh": []
-}
